@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}MoodBite - Welcome{% endblock %}
+{% block body %}
+{% set fr = lang == 'fr' %}
+<main class="app">
+  <div class="bg-blob" style="width:220px;height:220px;background:linear-gradient(135deg,#E4686E,#f9a8ad);top:-70px;right:-80px"></div>
+  <div class="bg-blob" style="width:180px;height:180px;background:linear-gradient(135deg,#2E9CA3,#80d4da);bottom:70px;left:-70px"></div>
+
+  <header class="top">
+    <a class="brand" href="{{ url_for('client.accueil') }}">
+      <img class="brand-logo" src="{{ url_for('static', filename='assets/moodbite_logo_full.png') }}" alt="MoodBite by OBAYOLI">
+    </a>
+    <div class="top-actions">
+      <nav class="lang-switch" aria-label="Language">
+        <a class="{% if not fr %}active{% endif %}" href="{{ url_for('switch_lang', lang_code='en') }}">EN</a>
+        <a class="{% if fr %}active{% endif %}" href="{{ url_for('switch_lang', lang_code='fr') }}">FR</a>
+      </nav>
+      <div class="dots"><span class="dot on"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+    </div>
+  </header>
+
+  <section id="welcomeScreen" class="screen" style="text-align:center;padding-top:24px">
+    <img src="{{ url_for('static', filename='assets/moodbite_icon.png') }}" alt="MoodBite" style="width:132px;height:auto;animation:float 3s ease-in-out infinite;margin:0 auto 20px;display:block">
+    <h1 class="hero">
+      {% if fr %}Ton humeur,<br><span class="gradient-text">ton repas.</span>{% else %}Your mood,<br><span class="gradient-text">your meal.</span>{% endif %}
+    </h1>
+    <p class="muted" style="margin:0 auto 34px;max-width:310px">
+      {% if fr %}Dis-nous ton mood, MoodBite te sort le plat OBAYOLI qui colle a ton vibe.{% else %}Tell us your vibe, and MoodBite serves the OBAYOLI pick that actually gets you.{% endif %}
+    </p>
+    <button id="startBtn" class="btn" type="button" style="width:100%;padding:18px;border-radius:18px;background:linear-gradient(135deg,#E4686E,#2E9CA3);color:white;font-size:17px;font-weight:800;letter-spacing:-.3px;box-shadow:0 6px 24px rgba(46,156,163,.35)">
+      {% if fr %}Commencer{% else %}Start the vibe check{% endif %}
+    </button>
+    <p style="color:#bbb;font-size:12px;margin-top:12px">
+      {% if fr %}moins de 60 secondes{% else %}under 60 seconds{% endif %}
+    </p>
+  </section>
+
+  <section id="nameScreen" class="screen" style="padding-top:12px;display:none">
+    <div style="font-size:64px;display:inline-block;animation:pulse3d 2.8s ease-in-out infinite">👋</div>
+    <h1 class="hero">
+      {% if fr %}Yo, on te sert selon <span class="gradient-text">ton mood.</span>{% else %}Your food should match <span class="gradient-text">your mood.</span>{% endif %}
+    </h1>
+    <p class="muted" style="max-width:320px;margin-bottom:28px">
+      {% if fr %}Dis-nous comment tu t'appelles, MoodBite capte ton vibe et te propose le bon plat OBAYOLI.{% else %}Drop your name, let MoodBite catch your vibe, then get the OBAYOLI pick that actually fits.{% endif %}
+    </p>
+
+    <form id="nameForm" class="card">
+      <label for="nom" style="display:block;font-size:11px;font-weight:800;color:#aaa;letter-spacing:1.3px;text-transform:uppercase;margin-bottom:10px">
+        {% if fr %}Ton prenom ou pseudo{% else %}Your name or nickname{% endif %}
+      </label>
+      <input id="nom" type="text" autocomplete="given-name" placeholder="{% if fr %}Ex: Yasmine{% else %}Ex: Yasmine{% endif %}" style="width:100%;padding:17px 18px;border:2px solid rgba(0,0,0,.08);border-radius:18px;font-size:18px;font-weight:700;color:#1a1a1a;outline:none;background:#fafafa">
+      <div id="error" class="alert">{{ error|default('') }}</div>
+      <button id="nameBtn" class="btn" type="submit" style="width:100%;padding:18px;border-radius:16px;background:rgba(0,0,0,.08);color:#bbb;font-size:16px;font-weight:800;margin-top:14px">
+        {% if fr %}Entre ton nom d'abord{% else %}Name first, feast after{% endif %}
+      </button>
+    </form>
+  </section>
+</main>
+{% endblock %}
+{% block scripts %}
+<script>
+  const input=document.getElementById('nom');
+  const btn=document.getElementById('nameBtn');
+  const errorBox=document.getElementById('error');
+  if(errorBox.textContent.trim()) errorBox.style.display='block';
+  document.getElementById('startBtn').addEventListener('click',()=>{
+    document.getElementById('welcomeScreen').style.display='none';
+    document.getElementById('nameScreen').style.display='block';
+    input.focus();
+  });
+  function updateButton(){
+    const name=input.value.trim();
+    if(name.length>1){
+      btn.style.background='linear-gradient(135deg,#E4686E,#2E9CA3)';
+      btn.style.color='white';
+      btn.textContent=LANG==='fr'?`Let's go, ${name}`:`Let's go, ${name}`;
+    }else{
+      btn.style.background='rgba(0,0,0,.08)';
+      btn.style.color='#bbb';
+      btn.textContent=LANG==='fr'?'Entre ton nom d’abord':'Name first, feast after';
+    }
+  }
+  input.addEventListener('input',updateButton);
+  document.getElementById('nameForm').addEventListener('submit',async(e)=>{
+    e.preventDefault();
+    errorBox.style.display='none';
+    try{
+      await postJSON("{{ url_for('client.saisir_nom') }}",{nom:input.value});
+      window.location.href="{{ url_for('client.choisir_mode') }}";
+    }catch(error){
+      errorBox.textContent=error.message;
+      errorBox.style.display='block';
+    }
+  });
+</script>
+{% endblock %}
