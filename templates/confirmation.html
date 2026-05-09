@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}MoodBite - Confirmed{% endblock %}
+{% block body %}
+{% set fr = lang == 'fr' %}
+<main class="app">
+  <header class="top">
+    <a class="brand" href="{{ url_for('client.accueil') }}">
+      <img class="brand-logo" src="{{ url_for('static', filename='assets/moodbite_logo_full.png') }}" alt="MoodBite by OBAYOLI">
+    </a>
+    <div class="top-actions">
+      <nav class="lang-switch" aria-label="Language">
+        <a class="{% if not fr %}active{% endif %}" href="{{ url_for('switch_lang', lang_code='en') }}">EN</a>
+        <a class="{% if fr %}active{% endif %}" href="{{ url_for('switch_lang', lang_code='fr') }}">FR</a>
+      </nav>
+      <img class="mini-logo" src="{{ url_for('static', filename='assets/moodbite_logo_compact.png') }}" alt="">
+    </div>
+  </header>
+
+  <section class="screen" style="text-align:center;padding-top:8px">
+    <div style="width:88px;height:88px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:38px;margin:0 auto 18px;animation:bounceIn .5s ease forwards;background:linear-gradient(135deg,{{ humeur.color }},#2E9CA3);color:white">✓</div>
+    <h1 class="hero" style="font-size:32px">{% if fr %}C'est note !{% else %}You're all set!{% endif %}</h1>
+    <div style="font-size:34px;font-weight:900;color:{{ humeur.color }};letter-spacing:-1px;margin-bottom:14px">{{ commande.numero }}</div>
+
+    <div class="card" style="text-align:left;margin-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;border-bottom:1px dashed rgba(0,0,0,.08);margin-bottom:12px">
+        <span style="font-size:13px;color:#999;font-weight:800">{% if fr %}Mood{% else %}Mood{% endif %}</span>
+        <span style="font-size:15px;font-weight:900;color:{{ humeur.color }}">{{ humeur.emoji }} {{ humeur.label(lang) }}</span>
+      </div>
+      {% for plat in commande.plats %}
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid rgba(0,0,0,.05)">
+          <span style="font-size:14px;color:#1a1a1a;font-weight:700">{{ plat.nom }}</span>
+          <span style="font-size:14px;color:{{ humeur.color }};font-weight:800">{{ "%.2f"|format(plat.prix|float) }} dhs</span>
+        </div>
+      {% endfor %}
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;padding-top:12px;border-top:2px solid rgba(0,0,0,.06)">
+        <span style="font-weight:900;color:#1a1a1a">{% if fr %}Total{% else %}Total{% endif %}</span>
+        <span style="font-weight:900;font-size:22px;color:{{ humeur.color }}">{{ "%.2f"|format(commande.total|float) }} dhs</span>
+      </div>
+    </div>
+    <p class="muted" style="margin-bottom:18px">{{ quote }}</p>
+    <button id="newOrder" class="btn" style="width:100%;padding:16px;border-radius:14px;background:linear-gradient(135deg,#E4686E,#2E9CA3);color:white;font-size:15px;font-weight:800">
+      {% if fr %}Nouvelle commande{% else %}New order{% endif %}
+    </button>
+  </section>
+</main>
+{% endblock %}
+{% block scripts %}
+<script>
+  document.getElementById('newOrder').addEventListener('click',async()=>{
+    try{
+      const data=await postJSON("{{ url_for('order.reset_order') }}",{});
+      window.location.href=data.redirect;
+    }catch(error){showToast(error.message)}
+  });
+</script>
+{% endblock %}

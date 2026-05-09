@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+{% block title %}MoodBite - Mood{% endblock %}
+{% block head %}
+{% if mode == "ia" %}
+<script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+{% endif %}
+{% endblock %}
+{% block body %}
+{% set fr = lang == 'fr' %}
+<main class="app">
+  <div class="bg-blob" style="width:210px;height:210px;background:linear-gradient(135deg,#302b63,#667eea);top:-70px;right:-70px"></div>
+  <div class="bg-blob" style="width:170px;height:170px;background:linear-gradient(135deg,#2E9CA3,#80d4da);bottom:90px;left:-70px"></div>
+
+  <header class="top">
+    <a class="brand" href="{{ url_for('client.accueil') }}">
+      <img class="brand-logo" src="{{ url_for('static', filename='assets/moodbite_logo_full.png') }}" alt="MoodBite by OBAYOLI">
+    </a>
+    <div class="top-actions">
+      <nav class="lang-switch" aria-label="Language">
+        <a class="{% if not fr %}active{% endif %}" href="{{ url_for('switch_lang', lang_code='en') }}">EN</a>
+        <a class="{% if fr %}active{% endif %}" href="{{ url_for('switch_lang', lang_code='fr') }}">FR</a>
+      </nav>
+      <img class="mini-logo" src="{{ url_for('static', filename='assets/moodbite_logo_compact.png') }}" alt="">
+    </div>
+  </header>
+
+  {% if mode == "ia" %}
+    <section class="screen">
+      <h1 class="hero" style="font-size:30px">
+        {% if fr %}Mood Scan <span style="color:#667eea;font-size:18px">pour {{user_name|default('toi') }}</span>{% else %}Mood Scan <span style="color:#667eea;font-size:18px">for {{ user_name|default('you') }}</span>{% endif %}
+      </h1>
+
+      <div id="scanIntro">
+        <div style="font-size:76px;animation:pulse3d 3s ease-in-out infinite;text-align:center;margin-bottom:16px">🧬</div>
+        <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:20px;padding:18px;margin-bottom:16px;color:rgba(255,255,255,.84);font-size:13px;line-height:1.8">
+          <div>• {% if fr %}Camera locale avec detection d'expressions faciales{% else %}Local webcam expression detection{% endif %}</div>
+          <div>• {% if fr %}Aucune photo envoyee a MoodBite{% else %}No photo is uploaded to MoodBite{% endif %}</div>
+          <div>• {% if fr %}Resultat base sur plusieurs frames, pas une humeur inventee{% else %}Result is based on frames, not a guessed mood{% endif %}</div>
+        </div>
+        <button class="btn" id="startScanBtn" style="width:100%;padding:18px;border-radius:16px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;font-size:16px;box-shadow:0 8px 24px rgba(102,126,234,.4);margin-bottom:10px">
+          {% if fr %}Lancer le scan{% else %}Start the scan{% endif %}
+        </button>
+        <a class="btn" href="{{ url_for('client.choisir_mode') }}" style="width:100%;padding:14px;border-radius:14px;border:1px solid rgba(0,0,0,.1);background:white;color:#888;font-size:14px;font-weight:700">
+          {% if fr %}Retour{% else %}Back{% endif %}
+        </a>
+      </div>
+
+      <div id="scanActive" style="display:none">
+        <div id="scanBox" style="position:relative;border-radius:20px;overflow:hidden;background:#0d0d0d;margin-bottom:16px;height:260px;display:flex;align-items:center;justify-content:center">
+          <video id="scanVid" autoplay muted playsinline style="width:100%;height:100%;object-fit:cover;transform:scaleX(-1)"></video>
+          <canvas id="scanCanvas" style="position:absolute;inset:0;width:100%;height:100%;transform:scaleX(-1)"></canvas>
+          <div style="position:absolute;inset:0;pointer-events:none">
+            <div style="position:absolute;top:12px;left:12px;width:26px;height:26px;border-top:3px solid #00ff88;border-left:3px solid #00ff88;box-shadow:0 0 8px #00ff88"></div>
+            <div style="position:absolute;top:12px;right:12px;width:26px;height:26px;border-top:3px solid #00ff88;border-right:3px solid #00ff88;box-shadow:0 0 8px #00ff88"></div>
+            <div style="position:absolute;bottom:12px;left:12px;width:26px;height:26px;border-bottom:3px solid #00ff88;border-left:3px solid #00ff88;box-shadow:0 0 8px #00ff88"></div>
+            <div style="position:absolute;bottom:12px;right:12px;width:26px;height:26px;border-bottom:3px solid #00ff88;border-right:3px solid #00ff88;box-shadow:0 0 8px #00ff88"></div>
+            <div style="position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#00ff88,transparent);box-shadow:0 0 12px #00ff88;animation:scanLine 1.2s linear infinite"></div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+          <span id="scanLabel" style="font-size:12px;color:#666;font-family:monospace">{% if fr %}Chargement des modeles...{% else %}Loading models...{% endif %}</span>
+          <span id="scanPct" style="font-size:12px;font-weight:800;color:#1a1a1a;font-family:monospace">0%</span>
+        </div>
+        <div style="height:6px;background:#eee;border-radius:3px;overflow:hidden">
+          <div id="scanBar" style="height:100%;width:0%;background:linear-gradient(90deg,#667eea,#00ff88);border-radius:3px;transition:width .2s ease;box-shadow:0 0 8px rgba(0,255,136,.4)"></div>
+        </div>
+      </div>
+
+      <div id="scanResult" style="display:none">
+        <div id="resultBadge" style="text-align:center;margin:24px 0 16px"></div>
+        <button id="scanAccept" class="btn" style="width:100%;padding:18px;border-radius:16px;color:white;font-size:16px;margin-bottom:8px"></button>
+        <button class="btn" id="retryScan" style="width:100%;padding:14px;border-radius:14px;border:1px solid rgba(0,0,0,.1);background:white;color:#888;font-size:13px;font-weight:700">
+          {% if fr %}Scanner encore{% else %}Scan again{% endif %}
+        </button>
+      </div>
+      <div id="scanError" class="alert"></div>
+    </section>
+  {% elif mode == "manuel" %}
+    <section class="screen">
+      <p style="font-size:12px;font-weight:800;color:#2E9CA3;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">
+        {% if fr %}Mode manuel{% else %}Manual mode{% endif %}
+      </p>
+      <h1 class="hero">{% if fr %}C'est quoi <span class="gradient-text">ton mood ?</span>{% else %}What's <span class="gradient-text">your vibe?</span>{% endif %}</h1>
+      <p class="muted" style="margin-bottom:22px">{% if fr %}Choisis franchement, on s'occupe du menu.{% else %}Pick the one that feels real. We'll handle the food.{% endif %}</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        {% for mood in supported_moods %}
+          {% set meta = mood_meta[mood] %}
+          <button class="btn moodBtn" data-mood="{{ mood }}" style="min-height:112px;padding:18px;border-radius:22px;background:{{ meta.bg }};border:2px solid {{ meta.color }}22;color:#1a1a1a;flex-direction:column">
+            <span style="font-size:34px">{{ meta.emoji }}</span>
+            <span style="font-size:15px">{{ meta["label_" ~ lang]|default(mood|capitalize) }}</span>
+          </button>
+        {% endfor %}
+      </div>
+    </section>
+  {% else %}
+    <section class="screen">
+      <p style="font-size:12px;font-weight:800;color:#2E9CA3;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">
+        {% if fr %}Hey {{ user_name|default('') }}{% else %}Hey {{ user_name|default('') }}{% endif %}
+      </p>
+      <h1 class="hero">{% if fr %}Comment on capte <span class="gradient-text">ton mood ?</span>{% else %}How do we catch <span class="gradient-text">your mood?</span>{% endif %}</h1>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:24px 0 16px">
+        <button class="btn modeBtn" data-mode="ia" style="padding:24px 14px;border-radius:22px;background:linear-gradient(135deg,#0f0c29,#302b63);color:white;text-align:center;position:relative;overflow:hidden;box-shadow:0 8px 32px rgba(48,43,99,.3);flex-direction:column">
+          <span style="font-size:30px">🤖</span><span>{% if fr %}Scan IA{% else %}AI scan{% endif %}</span>
+        </button>
+        <button class="btn modeBtn" data-mode="manuel" style="padding:24px 14px;border-radius:22px;background:white;border:2px solid rgba(0,0,0,.08);text-align:center;box-shadow:0 4px 16px rgba(0,0,0,.06);flex-direction:column">
+          <span style="font-size:30px">🎭</span><span>{% if fr %}Je choisis{% else %}I pick it{% endif %}</span>
+        </button>
+      </div>
+      <div style="text-align:center;padding:12px;background:rgba(0,0,0,.04);border-radius:12px">
+        <p style="font-size:11px;color:#888">{% if fr %}Le scan reste local dans ton navigateur.{% else %}The scan runs locally in your browser.{% endif %}</p>
+      </div>
+    </section>
+  {% endif %}
+</main>
+{% endblock %}
+{% block scripts %}
+<script>
+  document.querySelectorAll('.modeBtn').forEach(btn=>btn.addEventListener('click',async()=>{
+    try{
+      const data=await postJSON("{{ url_for('client.set_mode') }}",{mode:btn.dataset.mode});
+      window.location.href=data.redirect;
+    }catch(error){showToast(error.message)}
+  }));
+  document.querySelectorAll('.moodBtn').forEach(btn=>btn.addEventListener('click',async()=>{
+    try{
+      const data=await postJSON("{{ url_for('mood.set_mood') }}",{mood:btn.dataset.mood});
+      window.location.href=data.redirect;
+    }catch(error){showToast(error.message)}
+  }));
+</script>
+{% if mode == "ia" %}
+<script>
+  const MOOD_UI={{ mood_meta|tojson }};
+  let stream=null;
+  let scanTimer=null;
+  const expressionToMood={happy:'happy',sad:'sad',angry:'angry',neutral:'neutral',surprised:'excited',fearful:'stressed',disgusted:'stressed'};
+  const scanError=document.getElementById('scanError');
+  function moodLabel(mood){
+    const meta=MOOD_UI[mood]||MOOD_UI.neutral;
+    return LANG==='fr'?(meta.label_fr||mood):(meta.label_en||mood);
+  }
+  function setScanProgress(pct,label){
+    document.getElementById('scanBar').style.width=pct+'%';
+    document.getElementById('scanPct').textContent=Math.round(pct)+'%';
+    document.getElementById('scanLabel').textContent=label;
+  }
+  async function loadFaceModels(){
+    const modelUrl='https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
+    await faceapi.nets.tinyFaceDetector.loadFromUri(modelUrl);
+    await faceapi.nets.faceExpressionNet.loadFromUri(modelUrl);
+  }
+  async function startRealScan(){
+    scanError.style.display='none';
+    document.getElementById('scanIntro').style.display='none';
+    document.getElementById('scanResult').style.display='none';
+    document.getElementById('scanActive').style.display='block';
+    setScanProgress(5,LANG==='fr'?'Chargement des modeles...':'Loading models...');
+    try{
+      if(!window.faceapi) throw new Error(LANG==='fr'?'face-api.js ne s’est pas charge. Verifie internet puis reessaie.':'face-api.js did not load. Check internet, then try again.');
+      await loadFaceModels();
+      setScanProgress(18,LANG==='fr'?'Ouverture camera...':'Opening camera...');
+      stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480}},audio:false});
+      const video=document.getElementById('scanVid');
+      video.srcObject=stream;
+      await new Promise(resolve=>video.onloadedmetadata=resolve);
+      await video.play();
+      const canvas=document.getElementById('scanCanvas');
+      canvas.width=video.videoWidth||640;
+      canvas.height=video.videoHeight||480;
+      const ctx=canvas.getContext('2d');
+      const scores={happy:0,sad:0,angry:0,neutral:0,excited:0,stressed:0};
+      let frames=0;
+      const started=Date.now();
+      setScanProgress(25,LANG==='fr'?'Regarde la camera...':'Look at the camera...');
+      scanTimer=setInterval(async()=>{
+        const elapsed=Date.now()-started;
+        const pct=Math.min(96,25+(elapsed/5200)*71);
+        try{
+          const detection=await faceapi.detectSingleFace(video,new faceapi.TinyFaceDetectorOptions({inputSize:224,scoreThreshold:.45})).withFaceExpressions();
+          ctx.clearRect(0,0,canvas.width,canvas.height);
+          if(detection){
+            frames++;
+            const dims={width:canvas.width,height:canvas.height};
+            const resized=faceapi.resizeResults(detection,dims);
+            faceapi.draw.drawDetections(canvas,resized);
+            Object.entries(detection.expressions).forEach(([expression,value])=>{
+              const mood=expressionToMood[expression];
+              if(mood) scores[mood]+=value;
+            });
+            setScanProgress(pct,LANG==='fr'?'Expression captee...':'Expression captured...');
+          }else{
+            setScanProgress(pct,LANG==='fr'?'Je cherche ton visage...':'Finding your face...');
+          }
+        }catch(error){
+          clearInterval(scanTimer);
+          stopCamera();
+          showScanError(error.message);
+        }
+        if(elapsed>5600){
+          clearInterval(scanTimer);
+          stopCamera();
+          finishScan(scores,frames);
+        }
+      },450);
+    }catch(error){
+      stopCamera();
+      showScanError(error.message);
+    }
+  }
+  function stopCamera(){
+    if(stream){stream.getTracks().forEach(track=>track.stop());stream=null;}
+  }
+  function showScanError(message){
+    document.getElementById('scanActive').style.display='none';
+    document.getElementById('scanIntro').style.display='block';
+    scanError.textContent=message;
+    scanError.style.display='block';
+  }
+  function finishScan(scores,frames){
+    document.getElementById('scanActive').style.display='none';
+    if(frames<3){
+      showScanError(LANG==='fr'?'Je n’ai pas assez detecte ton visage. Rapproche-toi, eclaire ton visage et reessaie.':'I could not read enough face frames. Move closer, light your face, and try again.');
+      return;
+    }
+    const mood=Object.entries(scores).sort((a,b)=>b[1]-a[1])[0][0]||'neutral';
+    const confidence=Math.min(99,Math.max(55,Math.round((scores[mood]/frames)*100)));
+    const meta=MOOD_UI[mood]||MOOD_UI.neutral;
+    document.getElementById('scanResult').style.display='block';
+    document.getElementById('resultBadge').innerHTML=`<div style="font-size:74px;animation:bounceIn .5s ease forwards">${meta.emoji}</div><div style="font-size:11px;color:#999;letter-spacing:2px;text-transform:uppercase;font-family:monospace;margin:8px 0 6px">${LANG==='fr'?'Resultat du scan':'Scan result'}</div><h2 style="font-size:30px;font-weight:800;color:${meta.color};letter-spacing:-1px">${moodLabel(mood)}</h2><p class="muted" style="margin-top:8px">${LANG==='fr'?'Confiance':'Confidence'}: ${confidence}%</p>`;
+    const accept=document.getElementById('scanAccept');
+    accept.style.background=`linear-gradient(135deg,${meta.color},#2E9CA3)`;
+    accept.textContent=LANG==='fr'?`Voir mes plats ${meta.emoji}`:`Show my picks ${meta.emoji}`;
+    accept.onclick=async()=>{
+      try{
+        const data=await postJSON("{{ url_for('mood.analyse') }}",{mood:mood,confidence:confidence/100,progress:100});
+        window.location.href=data.redirect;
+      }catch(error){showToast(error.message)}
+    };
+  }
+  document.getElementById('startScanBtn').addEventListener('click',startRealScan);
+  document.getElementById('retryScan').addEventListener('click',startRealScan);
+  window.addEventListener('beforeunload',stopCamera);
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="{{ lang|default('en') }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{% block title %}MoodBite{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  {% block head %}{% endblock %}
+  <style>
+    :root{--red:#e4686e;--grey:#7b7f86;--teal:#2e9ca3;--ink:#333;--soft:#f8f6f2;--line:rgba(0,0,0,.08)}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'DM Sans','Helvetica Neue',sans-serif;background:var(--soft);min-height:100vh;overflow-x:hidden;color:#1a1a1a}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+    @keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
+    @keyframes pulse3d{0%,100%{transform:scale(1) rotate(-3deg)}50%{transform:scale(1.08) rotate(3deg)}}
+    @keyframes scanLine{0%{top:0%}100%{top:100%}}
+    @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+    @keyframes spinRev{from{transform:rotate(0deg)}to{transform:rotate(-360deg)}}
+    @keyframes bounceIn{0%{transform:scale(.8);opacity:0}60%{transform:scale(1.05)}100%{transform:scale(1);opacity:1}}
+    @keyframes productFloat{0%,100%{transform:translateY(0) rotate(-1deg) scale(1)}50%{transform:translateY(-9px) rotate(1deg) scale(1.025)}}
+    .app{max-width:480px;margin:0 auto;padding:0 16px 86px;background:linear-gradient(160deg,#faf9f6,#f0ede8);min-height:100vh;position:relative;overflow:hidden}
+    .wide-app{max-width:1060px;margin:0 auto;padding:0 18px 86px;background:linear-gradient(160deg,#faf9f6,#f0ede8);min-height:100vh}
+    .screen{animation:fadeUp .4s ease forwards}
+    .btn{border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:800;transition:all .2s ease;outline:none;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+    .btn:hover{transform:translateY(-2px)}
+    .btn:active{transform:translateY(0) scale(.98)}
+    .top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 0 16px;position:relative;z-index:2}
+    .brand{display:flex;align-items:center;text-decoration:none;min-width:0}
+    .brand-logo{width:156px;height:auto;display:block;object-fit:contain;animation:float 5s ease-in-out infinite}
+    .brand-logo.compact{width:88px}
+    .top-actions{display:flex;align-items:center;gap:9px;flex-shrink:0}
+    .lang-switch{display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.72);border:1px solid var(--line);border-radius:999px;padding:4px;box-shadow:0 4px 16px rgba(0,0,0,.04)}
+    .lang-switch a{font-size:11px;font-weight:800;color:#999;text-decoration:none;padding:6px 8px;border-radius:999px;line-height:1}
+    .lang-switch a.active{background:#333;color:white}
+    .mini-logo{width:38px;height:38px;object-fit:contain;animation:pulse3d 4s ease-in-out infinite}
+    .dots{display:flex;gap:5px;align-items:center}
+    .dot{width:6px;height:6px;border-radius:3px;background:rgba(0,0,0,.1)}
+    .dot.on{width:16px;background:linear-gradient(90deg,var(--red),var(--teal))}
+    .hero{font-size:clamp(31px,8vw,44px);font-weight:800;letter-spacing:-1.5px;line-height:1.08;margin-bottom:12px}
+    .gradient-text{background:linear-gradient(90deg,var(--red),var(--grey),var(--teal));background-size:200% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:shimmer 3s linear infinite}
+    .muted{color:#888;font-size:14px;line-height:1.65}
+    .card{background:white;border-radius:24px;padding:20px;box-shadow:0 6px 32px rgba(0,0,0,.08);border:1.5px solid rgba(0,0,0,.04)}
+    .alert{display:none;color:#9c2732;background:#fff2f3;border:1px solid #ffd4d8;border-radius:14px;padding:11px 12px;font-size:13px;font-weight:700;margin-top:12px}
+    input,select{font-family:'DM Sans',sans-serif}
+    .pill{display:inline-flex;align-items:center;gap:6px;background:white;border:1px solid var(--line);border-radius:999px;padding:7px 12px;font-size:12px;font-weight:800;color:#666;box-shadow:0 4px 14px rgba(0,0,0,.04)}
+    .bg-blob{position:absolute;border-radius:50%;filter:blur(60px);opacity:.34;pointer-events:none}
+    .dish-photo{width:min(92%,330px);max-height:205px;object-fit:contain;border-radius:18px;box-shadow:0 18px 28px rgba(0,0,0,.2);animation:productFloat 4s ease-in-out infinite}
+    @media(max-width:620px){.brand-logo{width:130px}.brand-logo.compact{width:74px}.top{gap:8px}.dots{display:none}.wide-app{padding-left:14px;padding-right:14px}}
+  </style>
+</head>
+<body>
+  {% block body %}{% endblock %}
+  <div id="toast" style="position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#1a1a1a;color:white;padding:12px 14px;border-radius:14px;font-size:13px;font-weight:800;display:none;z-index:99;max-width:calc(100vw - 32px);box-shadow:0 10px 30px rgba(0,0,0,.25)"></div>
+  <script>
+    const LANG="{{ lang|default('en') }}";
+    function showToast(msg){
+      const toast=document.getElementById('toast');
+      toast.textContent=msg;
+      toast.style.display='block';
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer=setTimeout(()=>toast.style.display='none',2600);
+    }
+    async function postJSON(url,payload){
+      const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload||{})});
+      const data=await res.json().catch(()=>({ok:false,error:LANG==='fr'?'Reponse invalide':'Invalid response'}));
+      if(!res.ok||data.ok===false)throw new Error(data.error||'Action failed');
+      return data;
+    }
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

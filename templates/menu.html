@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% block title %}MoodBite - Picks{% endblock %}
+{% set fr = lang == 'fr' %}
+{% set is_recap = view|default('menu') == 'recap' %}
+{% block body %}
+<main class="app">
+  <header class="top">
+    <a class="brand" href="{{ url_for('client.accueil') }}">
+      <img class="brand-logo" src="{{ url_for('static', filename='assets/moodbite_logo_full.png') }}" alt="MoodBite by OBAYOLI">
+    </a>
+    <div class="top-actions">
+      <nav class="lang-switch" aria-label="Language">
+        <a class="{% if not fr %}active{% endif %}" href="{{ url_for('switch_lang', lang_code='en') }}">EN</a>
+        <a class="{% if fr %}active{% endif %}" href="{{ url_for('switch_lang', lang_code='fr') }}">FR</a>
+      </nav>
+      <img class="mini-logo" src="{{ url_for('static', filename='assets/moodbite_logo_compact.png') }}" alt="">
+    </div>
+  </header>
+
+  {% if is_recap %}
+    <section class="screen">
+      <p class="pill">{{ humeur.emoji }} {{ humeur.label(lang) }}</p>
+      <h1 class="hero" style="font-size:34px;margin-top:12px">{% if fr %}Dernier check avant cuisine.{% else %}Final check before the kitchen.{% endif %}</h1>
+      <div class="card" style="margin-top:18px">
+        <div style="font-size:12px;color:#999;font-weight:800;letter-spacing:.6px;margin-bottom:12px;text-transform:uppercase">{% if fr %}Ta selection{% else %}Your selection{% endif %}</div>
+        {% for plat in panier.plats %}
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid rgba(0,0,0,.05)">
+            <span style="font-size:15px;font-weight:700">{{ plat.nom }}</span>
+            <span style="font-size:15px;color:{{ humeur.color }};font-weight:800">{{ "%.2f"|format(plat.prix) }} dhs</span>
+          </div>
+        {% endfor %}
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:2px solid rgba(0,0,0,.06)">
+          <span style="font-weight:800">{% if fr %}Total{% else %}Total{% endif %}</span>
+          <span style="font-weight:900;font-size:24px;color:{{ humeur.color }}">{{ "%.2f"|format(panier.total) }} dhs</span>
+        </div>
+      </div>
+      <button id="confirmOrder" class="btn" style="width:100%;padding:18px;border-radius:16px;background:linear-gradient(135deg,{{ humeur.color }},#2E9CA3);color:white;font-size:16px;margin-top:16px">
+        {% if fr %}Confirmer la commande{% else %}Lock in my order{% endif %}
+      </button>
+      <a class="btn" href="{{ url_for('order.menu') }}" style="width:100%;padding:14px;border-radius:14px;border:1px solid rgba(0,0,0,.1);background:white;color:#888;font-size:13px;font-weight:700;margin-top:9px">
+        {% if fr %}Retour aux plats{% else %}Back to picks{% endif %}
+      </a>
+    </section>
+  {% else %}
+    {% set fallback_plats = [
+      {"id":"fondant","nom":"Fondant","categorie":"Sandwich","prix":69,"ingredients":["grilled kebab","samurai sauce","mozzarella","lardinettes"],"photo":url_for('static', filename='assets/dishes_original/sandwitch2.jpg'),"justification":"Rich, melty and extra. Perfect when your mood wants a reward.","science":"Reward-heavy textures like melted cheese and sauce can boost pleasure signals when the brain is already in a positive state."},
+      {"id":"chevre-miel-bowl","nom":"Chevre Miel Bowl","categorie":"Bowl","prix":75,"ingredients":["grilled kebab","goat cheese","honey","corn","tomato"],"photo":url_for('static', filename='assets/dishes_original/chevre_miel.jpg'),"justification":"Sweet plus salty keeps the vibe playful and bright.","science":"Flavor contrast keeps attention high and can amplify enjoyment when your mood is open and upbeat."},
+      {"id":"milkshake-mms","nom":"Milkshake M&M's","categorie":"Milkshake","prix":39,"ingredients":["milk","vanilla ice cream","M&M's","whipped cream"],"photo":url_for('static', filename='assets/dishes_original/milkshake.jpg'),"justification":"Colorful, cold, sweet. A tiny celebration in a cup.","science":"Sugar and creamy textures activate reward pathways, which can make happy moods feel even more satisfying."},
+      {"id":"mojito-fraise","nom":"Mojito Fraise","categorie":"Mojito","prix":39,"ingredients":["strawberry","mint","lime","sparkling water"],"photo":url_for('static', filename='assets/dishes_original/mojito.jpg'),"justification":"Fresh and bright when your energy is already up.","science":"Cool citrus and mint create a sensory lift that pairs well with excited or positive moods."},
+      {"id":"crepe-nutella-banane","nom":"Crepe Nutella Banane","categorie":"Crepe","prix":30,"ingredients":["crepe","Nutella","banana"],"photo":url_for('static', filename='assets/dishes_original/crepe.jpg'),"justification":"Soft, warm and sweet. Proper comfort mode.","science":"Carbs plus banana can support serotonin pathways, while chocolate notes add a quick comfort signal."},
+      {"id":"crepes","nom":"Crepes Box","categorie":"Dessert","prix":35,"ingredients":["crepes","chocolate","speculoos","cream"],"photo":url_for('static', filename='assets/dishes_original/crepes.jpg'),"justification":"A dessert pick for when your mood needs softness, not drama.","science":"Sweet familiar flavors can feel soothing because the brain associates them with safety and reward."},
+      {"id":"gratin-savoyard","nom":"Gratin Savoyard","categorie":"Gratin","prix":75,"ingredients":["potato","kebab","cheese","red onion"],"photo":url_for('static', filename='assets/dishes_original/gratins.jpg'),"justification":"Warm, heavy, reassuring. This is comfort food doing its job.","science":"Warm carb-rich meals can activate the parasympathetic system, helping the body settle after a low or tense mood."},
+      {"id":"obayoli-wrap","nom":"The Obayoli","categorie":"Sandwich","prix":39,"ingredients":["grilled kebab","tortilla","white sauce","salad"],"photo":url_for('static', filename='assets/dishes_original/sandwitch.jpg'),"justification":"Simple, iconic, no overthinking. Exactly what stress needs.","science":"Familiar foods can lower decision fatigue and make the brain feel safe when the mood needs grounding."},
+      {"id":"grec","nom":"Grec","categorie":"Sandwich","prix":59,"ingredients":["grilled kebab","white sauce","salad","tomato","red onion"],"photo":url_for('static', filename='assets/dishes_original/grec.jpg'),"justification":"Reliable, filling, and zero surprises.","science":"Predictable meals reduce cognitive load, which matters when stress is already taking up brain space."},
+      {"id":"fuego-bowl","nom":"Fuego Bowl","categorie":"Bowl","prix":69,"ingredients":["kebab","spicy sauce","cheddar","jalapenos"],"photo":url_for('static', filename='assets/dishes_original/fuego.jpg'),"justification":"Spicy, loud, and very much awake.","science":"Capsaicin can trigger endorphins, which is why spicy food can feel like a clean emotional reset."},
+      {"id":"fuego","nom":"Fuego","categorie":"Sandwich","prix":65,"ingredients":["kebab","spicy sauce","jalapenos","red onion"],"photo":url_for('static', filename='assets/dishes_original/merguez.jpg'),"justification":"Heat that gives the anger somewhere useful to go.","science":"Spicy food stimulates TRPV1 receptors, creating a controlled intensity that can redirect high-energy emotions."},
+      {"id":"oriental-bowl","nom":"Oriental Bowl","categorie":"Bowl","prix":75,"ingredients":["kebab","merguez","Algerian sauce","corn"],"photo":url_for('static', filename='assets/dishes_original/oriental.jpg'),"justification":"Bold, saucy and unapologetic.","science":"Complex spices demand sensory focus, which can pull attention away from emotional overload."},
+      {"id":"salad-bowl","nom":"Salad Bowl","categorie":"Bowl","prix":59,"ingredients":["fresh salad","kebab","vegetables","house sauce"],"photo":url_for('static', filename='assets/dishes_original/salad_bowl.jpg'),"justification":"Fresh, colorful and still filling.","science":"Fresh textures and colorful ingredients can help a neutral mood feel lighter without being too heavy."},
+      {"id":"smoothie","nom":"Smoothie","categorie":"Juice","prix":35,"ingredients":["strawberry","banana","mango","coconut"],"photo":url_for('static', filename='assets/dishes_original/jus.jpg'),"justification":"Bright fruit energy, easy yes.","science":"Fruit sugars plus aroma give quick sensory brightness, useful when you want energy without heaviness."},
+      {"id":"waffle","nom":"Waffle","categorie":"Dessert","prix":35,"ingredients":["waffle","chocolate","cream"],"photo":url_for('static', filename='assets/dishes_original/waffle.jpg'),"justification":"Crispy edges, soft center, dessert therapy.","science":"Texture contrast keeps each bite interesting and can nudge reward circuits in a balanced mood."}
+    ] %}
+    {% set mood_science = {
+      "happy": "Happy brains chase color, contrast, and reward. Rich or playful dishes fit that dopamine-forward energy.",
+      "sad": "Low mood often asks for warmth, sweetness, and comfort. Soft textures and carbs can feel emotionally soothing.",
+      "stressed": "Stress raises cognitive load, so familiar, simple, filling food can feel like instant relief.",
+      "angry": "High-intensity moods match bold flavors. Spice and crunch can redirect that energy into a sensory hit.",
+      "neutral": "Neutral mood is perfect for balanced favorites: enough comfort, enough freshness, no chaos.",
+      "excited": "Excited energy loves bright, punchy, high-reward flavors that keep the momentum going."
+    } %}
+    {% set mood_science_fr = {
+      "happy": "Quand tu es bien, ton cerveau cherche couleur, contraste et recompense. Les plats gourmands matchent cette energie dopamine.",
+      "sad": "Quand le mood est bas, le cerveau cherche du chaud, du doux et du reconfort. Les textures comfort peuvent vraiment aider.",
+      "stressed": "Le stress charge le cerveau, donc un plat simple, familier et rassasiant fait baisser la pression.",
+      "angry": "Une emotion intense matche des saveurs intenses. Le spicy et le croquant transforment l'energie en experience sensorielle.",
+      "neutral": "Mood neutre = parfait pour les valeurs sures equilibrees: comfort, fraicheur, zero prise de tete.",
+      "excited": "Un mood excite aime les saveurs bright, punchy et ultra reward pour garder l'energie haute."
+    } %}
+    {% set display_plats = plats if plats else fallback_plats %}
+    <section class="screen">
+      <div id="dishHeader" style="text-align:center;margin-bottom:16px">
+        <div style="display:inline-flex;align-items:center;gap:6px;background:{{ humeur.bg }};color:{{ humeur.color }};padding:6px 14px;border-radius:20px;font-size:13px;font-weight:800;margin-bottom:10px">
+          {{ humeur.emoji }} {{ humeur.label(lang) }}
+        </div>
+        <h1 class="hero" style="font-size:30px">{% if fr %}Tes plats matchent ton mood.{% else %}Your picks match your mood.{% endif %}</h1>
+        <p class="muted">{{ humeur.get_quote(lang) }}</p>
+      </div>
+      {% if request.args.get('error') %}<div class="alert" style="display:block;margin-bottom:14px">{{ request.args.get('error') }}</div>{% endif %}
+      <div id="dishDots" style="display:flex;justify-content:center;gap:7px;margin:0 0 14px"></div>
+      <div id="dishCarousel" style="position:relative;min-height:560px">
+        {% for plat in display_plats %}
+          <article class="dish-slide" data-index="{{ loop.index0 }}" style="display:{% if loop.first %}block{% else %}none{% endif %};border-radius:24px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.12);background:white;border:2px solid {% if plat.id in selected_ids|default([]) %}{{ humeur.color }}{% else %}transparent{% endif %};animation:fadeUp .25s ease forwards">
+            <div style="position:relative;height:235px;background:radial-gradient(circle at 50% 45%,rgba(255,255,255,.95),{{ humeur.bg }} 62%,#f2eee6 100%);overflow:hidden;display:flex;align-items:center;justify-content:center">
+              <div style="position:absolute;width:170px;height:42px;border-radius:50%;background:rgba(0,0,0,.13);filter:blur(18px);bottom:18px;left:50%;transform:translateX(-50%)"></div>
+              {% if plat.photo %}<img class="dish-photo" src="{{ plat.photo }}" alt="{{ plat.nom }}">{% endif %}
+              <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.48),transparent 56%);pointer-events:none"></div>
+              <div style="position:absolute;left:16px;right:16px;bottom:14px;display:flex;justify-content:space-between;align-items:end;gap:10px;color:white">
+                <div><div style="font-size:12px;font-weight:800;opacity:.82">{{ plat.categorie }}</div><h2 style="font-size:24px;line-height:1;margin:3px 0 0">{{ plat.nom }}</h2></div>
+                <div style="font-size:22px;font-weight:900">{{ "%.0f"|format(plat.prix|float) }} dhs</div>
+              </div>
+            </div>
+            <div style="padding:18px">
+              <div style="background:#fff8f1;border-radius:12px;padding:11px 14px;margin-bottom:10px;border-left:3px solid {{ humeur.color }}">
+                <div style="font-size:11px;font-weight:800;color:{{ humeur.color }};margin-bottom:4px;letter-spacing:.5px;text-transform:uppercase">
+                  {% if fr %}Pourquoi ce plat{% else %}Why this dish{% endif %}
+                </div>
+                <p style="font-size:13px;color:#555;margin:0;line-height:1.5;font-style:italic">{{ plat.justification|default('A strong match for your current mood.', true) }}</p>
+              </div>
+              <div style="background:#f8f6ff;border-radius:12px;padding:11px 14px;margin-bottom:12px;border-left:3px solid #534AB7">
+                <div style="font-size:11px;font-weight:800;color:#534AB7;margin-bottom:4px;letter-spacing:.5px;text-transform:uppercase">
+                  {% if fr %}Science derriere{% else %}Mood science{% endif %}
+                </div>
+                <p style="font-size:12px;color:#666;margin:0;line-height:1.5">
+                  {{ plat.science|default((mood_science_fr[humeur.type] if fr else mood_science[humeur.type]), true) }}
+                </p>
+              </div>
+              <div style="font-size:11px;font-weight:800;color:#999;margin-bottom:6px;letter-spacing:.5px;text-transform:uppercase">{% if fr %}Ingredients{% else %}Ingredients{% endif %}</div>
+              <p style="font-size:12px;color:#777;line-height:1.45">{{ (plat.ingredients|default([]))|join(', ') }}</p>
+              <button class="btn addBtn" data-plat='{{ plat|tojson }}' style="width:100%;padding:15px;border-radius:14px;background:{% if plat.id in selected_ids|default([]) %}{{ humeur.color }}{% else %}#1a1a1a{% endif %};color:white;font-size:15px;margin-top:16px">
+                {% if plat.id in selected_ids|default([]) %}{% if fr %}Retirer{% else %}Remove{% endif %}{% else %}{% if fr %}Ajouter{% else %}Add it{% endif %}{% endif %}
+              </button>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+      <div id="dishNav" style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin:14px 0 0">
+        <button id="prevDish" class="btn" type="button" style="padding:12px 18px;border-radius:12px;border:1px solid #e0e0e0;background:white;color:#555;font-size:14px;font-weight:800">
+          {% if fr %}Prec.{% else %}Prev{% endif %}
+        </button>
+        <span id="dishCount" style="font-size:13px;color:#999;font-weight:800"></span>
+        <button id="nextDish" class="btn" type="button" style="padding:12px 18px;border-radius:12px;border:1px solid #e0e0e0;background:white;color:#555;font-size:14px;font-weight:800">
+          {% if fr %}Suiv.{% else %}Next{% endif %}
+        </button>
+      </div>
+      <div class="card" style="margin-top:18px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-size:12px;color:#999;font-weight:800;letter-spacing:.6px;text-transform:uppercase">{% if fr %}Panier{% else %}Cart{% endif %}</div>
+            <div style="font-size:18px;font-weight:900;margin-top:3px">{{ panier.plats|length }} {% if fr %}plat(s){% else %}item(s){% endif %}</div>
+          </div>
+          <div style="font-size:24px;font-weight:900;color:{{ humeur.color }}">{{ "%.2f"|format(panier.total|default(0)) }} dhs</div>
+        </div>
+      </div>
+      <a class="btn" href="{{ url_for('order.confirm_view') }}" style="width:100%;padding:18px;border-radius:16px;background:linear-gradient(135deg,{{ humeur.color }},#2E9CA3);color:white;font-size:16px;margin-top:14px">
+        {% if fr %}Commander{% else %}Order now{% endif %}
+      </a>
+    </section>
+  {% endif %}
+</main>
+{% endblock %}
+{% block scripts %}
+<script>
+  document.querySelectorAll('.addBtn').forEach(btn=>btn.addEventListener('click',async()=>{
+    try{
+      await postJSON("{{ url_for('order.toggle_cart') }}",{plat:JSON.parse(btn.dataset.plat)});
+      window.location.reload();
+    }catch(error){showToast(error.message)}
+  }));
+  const slides=[...document.querySelectorAll('.dish-slide')];
+  let currentDish=0;
+  function renderCarousel(){
+    if(!slides.length)return;
+    slides.forEach((slide,index)=>slide.style.display=index===currentDish?'block':'none');
+    const dots=document.getElementById('dishDots');
+    if(dots){
+      dots.innerHTML=slides.map((_,index)=>`<button type="button" aria-label="Dish ${index+1}" data-jump="${index}" style="width:${index===currentDish?22:8}px;height:8px;border:0;border-radius:4px;cursor:pointer;background:${index===currentDish?'{{ humeur.color }}':'#ddd'};transition:all .25s"></button>`).join('');
+      dots.querySelectorAll('[data-jump]').forEach(dot=>dot.addEventListener('click',()=>{currentDish=Number(dot.dataset.jump);renderCarousel();}));
+    }
+    const counter=document.getElementById('dishCount');
+    if(counter)counter.textContent=`${currentDish+1} / ${slides.length}`;
+    const prev=document.getElementById('prevDish');
+    const next=document.getElementById('nextDish');
+    if(prev){
+      prev.disabled=currentDish===0;
+      prev.style.color=currentDish===0?'#ccc':'#555';
+      prev.style.cursor=currentDish===0?'default':'pointer';
+    }
+    if(next){
+      next.disabled=currentDish===slides.length-1;
+      next.style.color=currentDish===slides.length-1?'#ccc':'#555';
+      next.style.cursor=currentDish===slides.length-1?'default':'pointer';
+    }
+  }
+  const prevDish=document.getElementById('prevDish');
+  const nextDish=document.getElementById('nextDish');
+  if(prevDish)prevDish.addEventListener('click',()=>{currentDish=Math.max(0,currentDish-1);renderCarousel();});
+  if(nextDish)nextDish.addEventListener('click',()=>{currentDish=Math.min(slides.length-1,currentDish+1);renderCarousel();});
+  const carousel=document.getElementById('dishCarousel');
+  if(carousel){
+    let startX=0;
+    carousel.addEventListener('touchstart',event=>{startX=event.touches[0].clientX;},{passive:true});
+    carousel.addEventListener('touchend',event=>{
+      const dx=event.changedTouches[0].clientX-startX;
+      if(Math.abs(dx)>55){
+        currentDish=dx<0?Math.min(slides.length-1,currentDish+1):Math.max(0,currentDish-1);
+        renderCarousel();
+      }
+    },{passive:true});
+  }
+  renderCarousel();
+  const confirmOrder=document.getElementById('confirmOrder');
+  if(confirmOrder){
+confirmOrder.addEventListener('click', async () => {
+  confirmOrder.disabled = true;
+  confirmOrder.textContent = LANG === 'fr' ? 'Envoi en cours...' : 'Sending...';
+  try {
+    const data = await postJSON("{{ url_for('order.confirm_order') }}", {});
+    window.location.href = data.redirect;
+  } catch(error) {
+    // Diag états Commande — état NouvelleCommande : afficher Réessayer
+    confirmOrder.disabled = false;
+    confirmOrder.textContent = LANG === 'fr' ? '⚠️ Réessayer' : '⚠️ Try again';
+    confirmOrder.style.background = '#E4686E';
+    showToast(error.message);
+  }
+});
+  }
+</script>
+{% endblock %}
